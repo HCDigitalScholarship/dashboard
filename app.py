@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_core_components as dcc # for Graphs
 import dash_html_components as html
 import dash_table
@@ -48,48 +48,23 @@ for i in keys:
 # for map
 mapbox_access_token ="pk.eyJ1Ijoic2Z4aWEiLCJhIjoiY2p0eXFmbXhkMThwczN5cnpoY3V2NXM2OSJ9.y1v1n6o9IQ8q-7xiYE6zNw"
 
-data = [
-    go.Scattermapbox(
-        lat=df['Latitude'],
-        lon=df['Longitude'],
-        mode='markers',
-        marker=go.scattermapbox.Marker(
-            size=9
-        ),
-        text=df['Name']
-    )
-]
-
-map_layout = dict(
-    autosize = True,
-    hovermode='closest',
-    mapbox=dict(
-        accesstoken=mapbox_access_token,
-        bearing=0,
-        center=go.layout.mapbox.Center(
-            lat=-38.92,
-            lon=174.88
-        ),
-        pitch=0,
-        zoom=4
-    ),
-    margin = dict(r=40, l=40, t=40, b=40)
-)
-
-
 # Layout
 app.layout = html.Div(children=[
     html.H1(
-        children='Hello Dash',
+        children='Dashboard',
         style={
             'textAlign': 'center',
-            'color': colors['text']
+            'color': colors['text'],
+            'margin-top': 10,
         }
     ),
 
-    html.Div(children='Dash: A web application framework for Python.', style={
+    html.H6(
+        children='A research dashboard for Indigeneity/Urban Ecology courses',
+        style={
         'textAlign': 'center',
-        'color': colors['text']
+        'color': colors['text'],
+        'padding': 5,
     }),
 
     html.Div(
@@ -128,10 +103,13 @@ app.layout = html.Div(children=[
                         children=[
                             dcc.Graph(
                                 id="map",
-                                figure={
-                                        'data': data,
-                                        'layout':map_layout
+                                config={
+                                    'scrollZoom': True
                                 },
+                                # figure={
+                                #         'data': data,
+                                #         'layout':map_layout
+                                # },
                             ),
                         ]
                     ),
@@ -174,9 +152,9 @@ def update_table(value):
         style_cell={
             'whiteSpace': 'normal',
             'padding': '5px',
-            'minWidth': '100px',
-            # 'width': '180px',
-            'maxWidth': '180px',
+            'minWidth': '150px',
+            'width': '150px',
+            'maxWidth': '150px',
             'textAlign': 'left',
         },
         style_header={
@@ -199,14 +177,12 @@ def update_table(value):
     Output('map', 'figure'),
     [Input('slider', 'value')])
 def update_map(value):
-    print("year:", value)
+    print("year: ", value)
     if value == 26:
         newdf = df
     else:
         newdf = df[df.Date.str.contains(str(yearDict[value]), na=False)]
-        
-    latitudes = newdf['Latitude']
-    longitudes = newdf['Longitude']
+
     updated_data = [
         go.Scattermapbox(
             lat=newdf['Latitude'],
@@ -219,26 +195,22 @@ def update_map(value):
         )
     ]
 
-    # print("updated_lat:",newdf['Latitude'])
-    # print("updated_long:", newdf['Longitude'])
-
-    map_layout = dict(
-    autosize= True,
-    hovermode='closest',
-    mapbox=dict(
-        accesstoken=mapbox_access_token,
-        bearing=0,
-        center=go.layout.mapbox.Center(
-            lat=-38.92,
-            lon=174.88
+    layout = dict(
+        #autosize= True,
+        hovermode='closest',
+        mapbox=dict(
+            accesstoken=mapbox_access_token,
+            #bearing=0,
+            center=dict(lat=-38.92, lon=174.88),
+            pitch=0,
+            zoom=4,
         ),
-        pitch=0,
-        zoom=4
-        ),
-    margin = dict(r=40, l=40, t=40, b=40)
+        margin = dict(r=40, l=40, t=40, b=40),
+        uirevision='same',
     )
-    figure=dict(data=updated_data, layout=map_layout)
-    return figure
+
+    fig=dict(data=updated_data, layout=layout)
+    return fig
 
 
 if __name__ == '__main__':
