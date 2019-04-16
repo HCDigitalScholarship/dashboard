@@ -14,13 +14,13 @@ import plotly.graph_objs as go
 #django
 from django_plotly_dash import DjangoDash
 
-df = pd.read_csv('Django_Dash_app/dashboard/csv/main_database.csv')
+df = pd.read_csv('Django_Dash_app/dashplotly/csv/main_database.csv')
 
 #df = pd.read_csv('./csv/main_database.csv')
 
-app = DjangoDash('SimpleExample')
+app = DjangoDash('Dashboard')
 #app=dash.Dash(__name__)
-print (app)
+#print (app)
 
 
 # Load styles
