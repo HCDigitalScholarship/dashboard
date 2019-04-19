@@ -5,11 +5,13 @@ import dash_core_components as dcc # for Graphs
 import dash_html_components as html
 import dash_table
 import pandas as pd
-# for date-Slider
-import math
+
 
 #for map
 import plotly.graph_objs as go
+
+#for timeline
+from Django_Dash_app.dashplotly.uniqueYearCalculator import uniqueYearCalculator
 
 #django
 from django_plotly_dash import DjangoDash
@@ -42,14 +44,7 @@ colors = {
 }
 
 # for date-Slider
-uniqueYear = set()
-for date in df['Date'].unique():
-    if type(date) == float and not math.isnan(date):
-        uniqueYear.add(int(date))
-    elif type(date) == str and date[-4:].isdigit():
-        uniqueYear.add(int(date[-4:]))
-uniqueYear = sorted(uniqueYear)
-
+uniqueYear = uniqueYearCalculator(df)
 yearDict = {}
 keys = range(len(uniqueYear))
 for i in keys:
@@ -58,6 +53,12 @@ for i in keys:
 
 # for map
 mapbox_access_token ="pk.eyJ1Ijoic2Z4aWEiLCJhIjoiY2p0eXFmbXhkMThwczN5cnpoY3V2NXM2OSJ9.y1v1n6o9IQ8q-7xiYE6zNw"
+
+# for timeline
+newdf = df[df['Type']=='Human']
+uniqueTimeline = uniqueYearCalculator(newdf)
+
+
 
 # Layout
 app.layout = html.Div(children=[
@@ -102,10 +103,6 @@ app.layout = html.Div(children=[
                                 config={
                                     'scrollZoom': True
                                 },
-                                # figure={
-                                #         'data': data,
-                                #         'layout':map_layout
-                                # },
                             ),
                         ]
                     ),
@@ -115,10 +112,52 @@ app.layout = html.Div(children=[
                         className='col-sm-6',
                         id='datatable',
                     ),
-
-
                 ]
-            )
+            ),
+
+            html.Div(
+                className="row",
+                children=[
+                    dcc.Graph(
+                        id="timeline",
+                        figure={
+                            'data': [
+                                go.Scatter(
+                                    x=newdf['Date'],
+                                    y=[1] * len(newdf),
+                                    text=newdf['Event'],
+                                    mode='markers',
+                                    #textposition='bottom center',
+                                    opacity=0.7,
+                                    marker={
+                                        'size': 15,
+                                        'line': {'width': 0.5, 'color': 'white'}
+                                    },
+                                    #name=i
+                                )
+                            ],
+                            'layout': go.Layout(
+                                width = 1200,
+                                height = 200,
+                                xaxis={ 'title': 'Year',
+                                        'ticks': '',
+                                        'showticklabels': False,
+
+                                      },
+                                yaxis={'showgrid': False,
+                                       'showline': False,
+                                       'zeroline': False,
+                                       'ticks': '',
+                                       'showticklabels': False,
+                                       },
+                                margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+                                legend={'x': 0, 'y': 1},
+                                hovermode='closest'
+                            )
+                        },
+                    ),
+                ]
+            ),
         ]
     ),
 ])
