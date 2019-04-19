@@ -50,6 +50,30 @@ keys = range(len(uniqueYear))
 for i in keys:
     yearDict[i] = uniqueYear[i]
 
+#for Checklist on Type
+uniqueType = set()
+for type in df['Type'].unique():
+    uniqueType.add(str(type))
+uniqueType = sorted(uniqueType)
+
+TypeDict = {}
+keys = range(len(uniqueType))
+for i in keys:
+    TypeDict[i] = uniqueType[i]
+
+#print(TypeDict)
+#print(TypeDict.items)
+
+checklist_options=[]
+
+for key, value in TypeDict.items():
+    option={}
+    option['label']=str(value)
+    option['value']=str(value)
+    checklist_options.append(option)
+
+#print("checklist_options \n", checklist_options)
+
 
 # for map
 mapbox_access_token ="pk.eyJ1Ijoic2Z4aWEiLCJhIjoiY2p0eXFmbXhkMThwczN5cnpoY3V2NXM2OSJ9.y1v1n6o9IQ8q-7xiYE6zNw"
@@ -90,6 +114,18 @@ app.layout = html.Div(children=[
                     'margin-bottom':'50px',
                 }
             ),
+
+            html.Div(
+                className='col-sm-4 checklist',
+                children=[
+                    dcc.Checklist(
+                        id="TypeChecklist",
+                        options=checklist_options[5:25],
+                        values=[]
+                    ),
+
+                ]),
+
 
             html.Div(
                 className='row',
@@ -164,18 +200,28 @@ app.layout = html.Div(children=[
 
 @app.callback(
     Output('datatable', 'children'),
-    [Input('slider', 'value')])
-def update_table(value):
+    [Input('slider', 'value'),
+    Input('TypeChecklist','values')])
+
+def update_table(value,types):
     # print("value:",value)
     if value == 26:
         newdf = df
     else:
         newdf = df[df.Date.str.contains(str(yearDict[value]), na=False)]
 
+    finaldf=pd.DataFrame()
+
+    if types == []:
+        finaldf = newdf
+    else:
+        for type in types:
+            finaldf = finaldf.append(newdf.loc[newdf['Type']==type])
+
     table = dash_table.DataTable(
         id='table',
-        data=newdf.to_dict("rows"),
-        columns=[{"name": i, "id": i} for i in newdf.columns if i not in ["Image", "Column", "Longitude", "Latitude"]],
+        data=finaldf.to_dict("rows"),
+        columns=[{"name": i, "id": i} for i in finaldf.columns if i not in ["Image", "Column", "Longitude", "Latitude"]],
         n_fixed_rows=1,
         sorting=True,
         filtering=True,
@@ -220,24 +266,41 @@ def update_table(value):
 
 @app.callback(
     Output('map', 'figure'),
-    [Input('slider', 'value')])
-def update_map(value):
-    print("year: ", value)
-    if value == 26:
+    [Input('slider', 'value'),
+    Input('TypeChecklist','values')])
+def update_map(year,types):
+    print("year: ", year)
+    print('types:',types)
+    if year == 26:
         newdf = df
     else:
-        newdf = df[df.Date.str.contains(str(yearDict[value]), na=False)]
+        newdf = df[df.Date.str.contains(str(yearDict[year]), na=False)]
+
+    finaldf=pd.DataFrame()
+
+    if types == []:
+        finaldf = newdf
+    else:
+        for type in types:
+            finaldf = finaldf.append(newdf.loc[newdf['Type']==type])
+
+
+    print(finaldf)
+
+            
+
+
 
     updated_data = [
         go.Scattermapbox(
-            lat=newdf['Latitude'],
-            lon=newdf['Longitude'],
+            lat=finaldf['Latitude'],
+            lon=finaldf['Longitude'],
             mode='markers',
             marker=go.scattermapbox.Marker(
-                size=8,
+                size=11,
                 opacity=0.7,
              ),
-            text= newdf['Name'],
+            text= finaldf['Name'],
         ),
     ]
 
@@ -258,6 +321,7 @@ def update_map(value):
 
     fig=dict(data=updated_data, layout=layout)
     return fig
+
 
 """
 if __name__ == '__main__':
