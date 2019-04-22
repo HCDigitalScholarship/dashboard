@@ -11,3 +11,10 @@ h2 {
   color: #5a5c69;
   text-align: center;
 }
+
+.Radioitems {
+	text-align: right;
+	border-style: solid;
+	border-color: #d7dde5;
+	background-color: #d0d6dd;
+}
