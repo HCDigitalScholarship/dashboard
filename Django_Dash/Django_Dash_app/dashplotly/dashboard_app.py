@@ -20,10 +20,14 @@ df = pd.read_csv('Django_Dash_app/dashplotly/csv/main_database.csv')
 
 #df = pd.read_csv('./csv/main_database.csv')
 
-app = DjangoDash('Dashboard')
+#app = DjangoDash('Dashboard')
 #app=dash.Dash(__name__)
 #print (app)
-
+app_name = "application"
+app = DjangoDash('Dashboard')
+                #serve_locally=True)
+                #app_name=app_name
+                #)
 
 # Load styles
 #css_url = 'https://codepen.io/IvanNieto/pen/bRPJyb.css'
@@ -34,8 +38,10 @@ css_url = 'https://codepen.io/chriddyp/pen/bWLwgP.css'
 
 #css_url='https://cdn.rawgit.com/plotly/dash-app-stylesheets/2d266c578d2a6e8850ebce48fdb52759b2aef506/stylesheet-oil-and-gas.css'
 css_bootstrap_url = 'https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css'
+
+app_css_static = '/static/css/app.css'
 app.css.append_css({
-    "external_url": [css_bootstrap_url, css_url],
+    "external_url": [css_bootstrap_url,css_url,app_css_static],
 })
 
 colors = {
@@ -64,13 +70,15 @@ for i in keys:
 #print(TypeDict)
 #print(TypeDict.items)
 
-checklist_options=[]
+RadioItems_options=[]
 
 for key, value in TypeDict.items():
     option={}
     option['label']=str(value)
     option['value']=str(value)
-    checklist_options.append(option)
+    RadioItems_options.append(option)
+select_all = {'label':"Show all types",'value':"All"}
+RadioItems_options.append(select_all)
 
 #print("checklist_options \n", checklist_options)
 
@@ -116,12 +124,13 @@ app.layout = html.Div(children=[
             ),
 
             html.Div(
-                className='col-sm-4 checklist',
+                className='col-sm-4 RadioItems',
                 children=[
-                    dcc.Checklist(
-                        id="TypeChecklist",
-                        options=checklist_options[5:25],
-                        values=[]
+                    dcc.RadioItems(
+                        id="RadioItems",
+                        labelClassName="Select Type",
+                        options=RadioItems_options[20:],
+                        value=""
                     ),
 
                 ]),
@@ -201,27 +210,27 @@ app.layout = html.Div(children=[
 @app.callback(
     Output('datatable', 'children'),
     [Input('slider', 'value'),
-    Input('TypeChecklist','values')])
+    Input('RadioItems','value')])
 
-def update_table(value,types):
+def update_table(value,type):
     # print("value:",value)
     if value == 26:
         newdf = df
     else:
         newdf = df[df.Date.str.contains(str(yearDict[value]), na=False)]
 
-    finaldf=pd.DataFrame()
+    #finaldf=pd.DataFrame()
 
-    if types == []:
-        finaldf = newdf
+    if (type == "" or type == "All"):
+        newdf = newdf
     else:
-        for type in types:
-            finaldf = finaldf.append(newdf.loc[newdf['Type']==type])
+        #finaldf = finaldf.append(newdf.loc[newdf['Type']==type])
+        newdf=newdf.loc[newdf['Type']==type]
 
     table = dash_table.DataTable(
         id='table',
-        data=finaldf.to_dict("rows"),
-        columns=[{"name": i, "id": i} for i in finaldf.columns if i not in ["Image", "Column", "Longitude", "Latitude"]],
+        data=newdf.to_dict("rows"),
+        columns=[{"name": i, "id": i} for i in newdf.columns if i not in ["Image", "Column", "Longitude", "Latitude"]],
         n_fixed_rows=1,
         sorting=True,
         filtering=True,
@@ -267,40 +276,37 @@ def update_table(value,types):
 @app.callback(
     Output('map', 'figure'),
     [Input('slider', 'value'),
-    Input('TypeChecklist','values')])
-def update_map(year,types):
+    Input('RadioItems','value')])
+def update_map(year,type):
     print("year: ", year)
-    print('types:',types)
+    print('type:',type)
     if year == 26:
         newdf = df
     else:
         newdf = df[df.Date.str.contains(str(yearDict[year]), na=False)]
 
-    finaldf=pd.DataFrame()
 
-    if types == []:
-        finaldf = newdf
+    if (type == "" or type == "All"):
+        newdf = newdf
     else:
-        for type in types:
-            finaldf = finaldf.append(newdf.loc[newdf['Type']==type])
+        newdf =newdf.loc[newdf['Type']==type]
 
 
-    print(finaldf)
+    print(newdf)
 
             
 
 
-
     updated_data = [
         go.Scattermapbox(
-            lat=finaldf['Latitude'],
-            lon=finaldf['Longitude'],
+            lat=newdf['Latitude'],
+            lon=newdf['Longitude'],
             mode='markers',
             marker=go.scattermapbox.Marker(
                 size=11,
                 opacity=0.7,
              ),
-            text= finaldf['Name'],
+            text= newdf['Name']+"<br>"+newdf['Description'],
         ),
     ]
 
@@ -311,15 +317,16 @@ def update_map(year,types):
         mapbox=dict(
             accesstoken=mapbox_access_token,
             #bearing=0,
-            center=dict(lat=-38.92, lon=174.88),
+            center=dict(lat=-36.85, lon=174.77),
             pitch=0,
-            zoom=4,
+            zoom=9,
         ),
         margin = dict(r=40, l=40, t=40, b=40),
         uirevision='same',
     )
 
     fig=dict(data=updated_data, layout=layout)
+
     return fig
 
 
