@@ -1,3 +1,19 @@
+#page-header {
+  background-color: #800000;
+  padding: 80px, 50px, 40px, 50px;
+}
+
+#page-header h1 {
+  font-family: 'Crimson Text', serif;
+  color: #ffffff;
+  text-align: left;
+}
+
+#page-header h6 {
+  font-family: 'Merriweather', serif;
+  color: #f2f2f2;
+  text-align: left;
+}
 h1 {
   font-family: 'Merriweather', serif;
   font-size: 40px;
@@ -12,9 +28,11 @@ h2 {
   text-align: center;
 }
 
+
 div.col-sm-4.Radioitems {
 	text-align: right;
 	border-style: solid;
 	border-color: #d7dde5;
 	background-color: #d0d6dd;
 }
+
