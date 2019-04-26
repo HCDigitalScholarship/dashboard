@@ -16,7 +16,7 @@ from Django_Dash_app.dashplotly.uniqueYearCalculator import uniqueYearCalculator
 #django
 from django_plotly_dash import DjangoDash
 
-df = pd.read_csv('Django_Dash_app/dashplotly/csv/main_database.csv')
+df = pd.read_csv('Django_Dash_app/dashplotly/csv/main_database_in_progress.csv')
 
 #df = pd.read_csv('./csv/main_database.csv')
 
@@ -87,9 +87,12 @@ RadioItems_options.append(select_all)
 mapbox_access_token ="pk.eyJ1Ijoic2Z4aWEiLCJhIjoiY2p0eXFmbXhkMThwczN5cnpoY3V2NXM2OSJ9.y1v1n6o9IQ8q-7xiYE6zNw"
 
 # for timeline
-newdf = df[df['Type']=='Human']
-uniqueTimeline = uniqueYearCalculator(newdf)
-
+# newdf = df[df['Type']=='Human']
+cleanDate = pd.to_datetime(df['Date'], errors='coerce')
+df['Month'] = cleanDate.dt.month
+df['Year'] = cleanDate.dt.year
+print(df['Month'])
+print(df['Year'])
 
 
 # Layout
@@ -168,9 +171,9 @@ app.layout = html.Div(children=[
                         figure={
                             'data': [
                                 go.Scatter(
-                                    x=newdf['Date'],
-                                    y=[1] * len(newdf),
-                                    text=newdf['Event'],
+                                    x=df[df['Type'] == i]['Year'],
+                                    y=df[df['Type'] == i]['Month'],
+                                    text=df[df['Type'] == i]['Event'],
                                     mode='markers',
                                     #textposition='bottom center',
                                     opacity=0.7,
@@ -178,25 +181,26 @@ app.layout = html.Div(children=[
                                         'size': 15,
                                         'line': {'width': 0.5, 'color': 'white'}
                                     },
-                                    #name=i
-                                )
+                                    name=i,
+                                ) for i in df.Type.unique()
                             ],
+
                             'layout': go.Layout(
-                                width = 1200,
-                                height = 200,
+                                width = 1350,
+                                height = 300,
                                 xaxis={ 'title': 'Year',
                                         'ticks': '',
-                                        'showticklabels': False,
-
+                                        # 'showticklabels': False,
                                       },
-                                yaxis={'showgrid': False,
+                                yaxis={'title': 'Month',
+                                       'showgrid': False,
                                        'showline': False,
                                        'zeroline': False,
                                        'ticks': '',
-                                       'showticklabels': False,
+                                       # 'showticklabels': False,
                                        },
                                 margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-                                legend={'x': 0, 'y': 1},
+                                #legend={'x': 0, 'y': 1},
                                 hovermode='closest'
                             )
                         },
@@ -214,7 +218,7 @@ app.layout = html.Div(children=[
 
 def update_table(value,type):
     # print("value:",value)
-    if value == 26:
+    if value == len(uniqueYear):
         newdf = df
     else:
         newdf = df[df.Date.str.contains(str(yearDict[value]), na=False)]
@@ -279,8 +283,8 @@ def update_table(value,type):
     Input('RadioItems','value')])
 def update_map(year,type):
     print("year: ", year)
-    print('type:',type)
-    if year == 26:
+    # print('types:',types)
+    if year == len(uniqueYear):
         newdf = df
     else:
         newdf = df[df.Date.str.contains(str(yearDict[year]), na=False)]
@@ -291,16 +295,15 @@ def update_map(year,type):
     else:
         newdf =newdf.loc[newdf['Type']==type]
 
-
-    print(newdf)
-
-            
-
+    # print(finaldf)
+    coord = finaldf['lat,long'].str.split(', ', expand=True)
+    finaldf['lat']=coord[0]
+    finaldf['long']=coord[1]
 
     updated_data = [
         go.Scattermapbox(
-            lat=newdf['Latitude'],
-            lon=newdf['Longitude'],
+            lat=finaldf['lat'],
+            lon=finaldf['long'],
             mode='markers',
             marker=go.scattermapbox.Marker(
                 size=11,
