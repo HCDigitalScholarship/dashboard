@@ -1,6 +1,7 @@
 
 {% extends 'base.html' %}
 {% load plotly_dash %}
+{% plotly_header %}
 
 {% block content %}
 
@@ -11,6 +12,8 @@
     		<div>
 
         </div>
+        
+{% plotly_footer %}
 
 
 {% endblock %}

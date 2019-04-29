@@ -76,7 +76,7 @@ cleanDate = pd.to_datetime(df['Date'], errors='coerce')
 df.loc[:, 'Month'] = cleanDate.dt.month
 df.loc[:, 'Year'] = cleanDate.dt.year
 
-
+alert=""
 
 # Layout
 app.layout = html.Div(children=[
@@ -101,31 +101,25 @@ app.layout = html.Div(children=[
                             )
                         ],
                         style={
-                            'padding':'30px',
+                            'padding':'10px',
+                            'border-style': 'solid',
+                            'border-color': '#d7dde5',
+                            'background-color': '#f4f6f9',
+                            'margin-left':'10px',
                         }
                     ),
 
                     html.Div(
                         # map
-                        className='col-sm-8',
+                        className='col-sm-7',
                         children=[
+
                             dcc.Graph(
                                 id="map",
                                 config={
                                     'scrollZoom': True
                                 },
                             ),
-                        ]
-                    ),
-                ]
-            ),
-
-            html.Div(
-                # Slider
-                className='container',
-                children=[
-                    html.Div(
-                        children=[
                             dcc.Slider(
                                 id='slider',
                                 min=0,
@@ -136,12 +130,14 @@ app.layout = html.Div(children=[
                                 # marks={str(date):str(date) for date in uniqueYear},
                                 value=len(uniqueYear),
                             )
+
                         ]
                     ),
                 ],
+
                 style={
-                    'margin-bottom':'50px',
-                }
+                         'margin-bottom':'20px',
+                        }
             ),
 
             html.Div(
@@ -153,6 +149,7 @@ app.layout = html.Div(children=[
                 ],
                 style={
                     'margin-bottom':'50px',
+                    'width': 'auto',
                 }
             ),
 
@@ -188,10 +185,35 @@ def update_map(year,type):
         newdf =newdf.loc[newdf['Type']==type]
 
     # print(newdf)
-    coord = newdf['lat,long'].str.split(', ', expand=True)
-    newdf.loc[:, 'lat']=coord[0]
-    newdf.loc[:, 'long']=coord[1]
+    # nolocation=""
 
+
+
+    try:
+        coord = newdf['lat,long'].str.split(', ', expand=True)
+        newdf.loc[:, 'lat']=coord[0]
+        newdf.loc[:, 'long']=coord[1]
+
+    
+    except:
+        print("some coordinates are mising")
+
+        
+
+    newdf=newdf.fillna('missing')
+    nolocationdf=newdf.loc[newdf['lat']=="missing"]
+    nolocation=nolocationdf['Name'] 
+    print('nolocationdf:', nolocationdf)
+    Alert_message=""
+    alert='Coordinates for '
+    for name in nolocation:
+        alert = alert + name+", "
+    Alert_message = alert + "are missing."
+
+    print (Alert_message)
+
+
+    print('newdf:\n', newdf)
     updated_data = [
         go.Scattermapbox(
             lat=newdf['lat'],
@@ -216,8 +238,9 @@ def update_map(year,type):
             pitch=0,
             zoom=9,
         ),
-        margin = dict(r=40, l=40, t=40, b=40),
+        margin = dict(r=40, l=40, t=20, b=20),
         uirevision='same',
+        label= Alert_message,
     )
 
     fig=dict(data=updated_data, layout=layout)
@@ -255,8 +278,9 @@ def update_timeline(type):
     ]
 
     layout = go.Layout(
-                width = 1350,
-                height = 300,
+                autosize=True,
+                #width = 1300,
+                #height = 300,
                 xaxis={ 'title': 'Year',
                         'ticks': '',
                         # 'showticklabels': False,
@@ -269,8 +293,11 @@ def update_timeline(type):
                        # 'showticklabels': False,
                        },
                 margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-                #legend={'x': 0, 'y': 1},
-                hovermode='closest'
+                legend={'x': 0, 
+                        'y': 1,
+                        'orientation':'h'
+                        },
+                hovermode='closest',
             )
 
     fig=dict(data=data, layout=layout)
@@ -297,6 +324,8 @@ def update_table(value,type):
     else:
         #newdf = newdf.append(newdf.loc[newdf['Type']==type])
         newdf=newdf.loc[newdf['Type']==type]
+
+    newdf=newdf.fillna('missing')
 
     table = dash_table.DataTable(
         id='table',
