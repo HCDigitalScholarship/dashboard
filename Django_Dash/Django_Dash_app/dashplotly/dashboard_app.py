@@ -5,23 +5,23 @@ import dash_core_components as dcc # for Graphs
 import dash_html_components as html
 import dash_table
 import pandas as pd
-# for date-Slider
-import math
 
 #for map
 import plotly.graph_objs as go
 
+#for timeline
+from Django_Dash_app.dashplotly.uniqueYearCalculator import uniqueYearCalculator
+
 #django
 from django_plotly_dash import DjangoDash
 
-df = pd.read_csv('Django_Dash_app/dashboard/csv/main_database.csv')
+df = pd.read_csv('Django_Dash_app/dashplotly/csv/main_database_in_progress.csv')
 
-#df = pd.read_csv('./csv/main_database.csv')
-
-app = DjangoDash('SimpleExample')
-#app=dash.Dash(__name__)
-print (app)
-
+app_name = "application"
+app = DjangoDash('Dashboard')
+                #serve_locally=True)
+                #app_name=app_name
+                #)
 
 # Load styles
 #css_url = 'https://codepen.io/IvanNieto/pen/bRPJyb.css'
@@ -32,8 +32,10 @@ css_url = 'https://codepen.io/chriddyp/pen/bWLwgP.css'
 
 #css_url='https://cdn.rawgit.com/plotly/dash-app-stylesheets/2d266c578d2a6e8850ebce48fdb52759b2aef506/stylesheet-oil-and-gas.css'
 css_bootstrap_url = 'https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css'
+
+app_css_static = '/static/css/app.css'
 app.css.append_css({
-    "external_url": [css_bootstrap_url, css_url],
+    "external_url": [css_bootstrap_url,css_url,app_css_static],
 })
 
 colors = {
@@ -42,36 +44,82 @@ colors = {
 }
 
 # for date-Slider
-uniqueYear = set()
-for date in df['Date'].unique():
-    if type(date) == float and not math.isnan(date):
-        uniqueYear.add(int(date))
-    elif type(date) == str and date[-4:].isdigit():
-        uniqueYear.add(int(date[-4:]))
-uniqueYear = sorted(uniqueYear)
-
+uniqueYear = uniqueYearCalculator(df)
 yearDict = {}
 keys = range(len(uniqueYear))
 for i in keys:
     yearDict[i] = uniqueYear[i]
 
+# for Radioitems
+uniqueType = set()
+for type in df['Type'].unique():
+    uniqueType.add(str(type))
+uniqueType = sorted(uniqueType)
+uniqueType.remove('nan')
+
+RadioItems_options=[]
+for type in uniqueType:
+    option={}
+    option['label']=str(type)
+    option['value']=str(type)
+    RadioItems_options.append(option)
+select_all = {'label':"Show all types",'value':"All"}
+RadioItems_options.append(select_all)
+# print("RadioItems_options \n", RadioItems_options)
+
 
 # for map
 mapbox_access_token ="pk.eyJ1Ijoic2Z4aWEiLCJhIjoiY2p0eXFmbXhkMThwczN5cnpoY3V2NXM2OSJ9.y1v1n6o9IQ8q-7xiYE6zNw"
 
+# for timeline
+cleanDate = pd.to_datetime(df['Date'], errors='coerce')
+df.loc[:, 'Month'] = cleanDate.dt.month
+df.loc[:, 'Year'] = cleanDate.dt.year
+
+alert=""
+
 # Layout
 app.layout = html.Div(children=[
-
-
     html.Div(
         className='container-fluid',
         children=[
             html.Div(
-                # Slider
-                className='container',
+                className='row',
                 children=[
                     html.Div(
+                        # Radioitems
+                        className='col-sm-4',
                         children=[
+                            dcc.RadioItems(
+                                id="RadioItems",
+                                labelClassName="Select Type",
+                                options=RadioItems_options,
+                                value="",
+                                labelStyle={'display': 'inline-block',
+                                            'margin': '6px',
+                                           },
+                            )
+                        ],
+                        style={
+                            'padding':'10px',
+                            'border-style': 'solid',
+                            'border-color': '#d7dde5',
+                            'background-color': '#f4f6f9',
+                            'margin-left':'10px',
+                        }
+                    ),
+
+                    html.Div(
+                        # map
+                        className='col-sm-7',
+                        children=[
+
+                            dcc.Graph(
+                                id="map",
+                                config={
+                                    'scrollZoom': True
+                                },
+                            ),
                             dcc.Slider(
                                 id='slider',
                                 min=0,
@@ -82,61 +130,208 @@ app.layout = html.Div(children=[
                                 # marks={str(date):str(date) for date in uniqueYear},
                                 value=len(uniqueYear),
                             )
+
                         ]
+                    ),
+                ],
+
+                style={
+                         'margin-bottom':'20px',
+                        }
+            ),
+
+            html.Div(
+                className="container-fuild",
+                children=[
+                    dcc.Graph(
+                        id='timeline',
                     ),
                 ],
                 style={
                     'margin-bottom':'50px',
+                    'width': 'auto',
                 }
             ),
 
             html.Div(
-                className='row',
-                children=[
-                    html.Div(
-                        # map
-                        className='col-sm-6',
-                        children=[
-                            dcc.Graph(
-                                id="map",
-                                config={
-                                    'scrollZoom': True
-                                },
-                                # figure={
-                                #         'data': data,
-                                #         'layout':map_layout
-                                # },
-                            ),
-                        ]
-                    ),
-
-                    html.Div(
-                        # Data table
-                        className='col-sm-6',
-                        id='datatable',
-                    ),
-
-
-                ]
+                className='container',
+                id='datatable',
+                style={
+                    'margin-bottom':'100px',
+                }
             )
         ]
     ),
 ])
 
+
+
+# map
+@app.callback(
+    Output('map', 'figure'),
+    [Input('slider', 'value'),
+    Input('RadioItems','value')])
+def update_map(year,type):
+    # print("year: ", year)
+    # print('type:',type)
+    if year == len(uniqueYear):
+        newdf = df
+    else:
+        newdf = df[df.Date.str.contains(str(yearDict[year]), na=False)]
+
+    if (type == "" or type == "All"):
+        newdf = newdf
+    else:
+        newdf =newdf.loc[newdf['Type']==type]
+
+    # print(newdf)
+    # nolocation=""
+
+
+
+    try:
+        coord = newdf['lat,long'].str.split(', ', expand=True)
+        newdf.loc[:, 'lat']=coord[0]
+        newdf.loc[:, 'long']=coord[1]
+
+    
+    except:
+        print("some coordinates are mising")
+
+        
+
+    newdf=newdf.fillna('missing')
+    nolocationdf=newdf.loc[newdf['lat']=="missing"]
+    nolocation=nolocationdf['Name'] 
+    print('nolocationdf:', nolocationdf)
+    Alert_message=""
+    alert='Coordinates for '
+    for name in nolocation:
+        alert = alert + name+", "
+    Alert_message = alert + "are missing."
+
+    print (Alert_message)
+
+
+    print('newdf:\n', newdf)
+    updated_data = [
+        go.Scattermapbox(
+            lat=newdf['lat'],
+            lon=newdf['long'],
+            mode='markers',
+            marker=go.scattermapbox.Marker(
+                size=11,
+                opacity=0.7,
+             ),
+            text= df['Name']+"<br>"+newdf['Description'],
+        ),
+    ]
+
+    layout = dict(
+        #autosize= True,
+        hovermode='closest',
+        showlegend=False,
+        mapbox=dict(
+            accesstoken=mapbox_access_token,
+            #bearing=0,
+            center=dict(lat=-36.85, lon=174.77),
+            pitch=0,
+            zoom=9,
+        ),
+        margin = dict(r=40, l=40, t=20, b=20),
+        uirevision='same',
+        label= Alert_message,
+    )
+
+    fig=dict(data=updated_data, layout=layout)
+
+    return fig
+
+
+# timeline
+@app.callback(
+    Output('timeline', 'figure'),
+    [Input('RadioItems', 'value')])
+def update_timeline(type):
+    # print ('type: ', type)
+    if (type == "" or type == "All"):
+        df_timeline = df
+    else:
+        df_timeline = df[df['Type'] == type]
+
+    print (df_timeline.Type.unique())
+
+    data = [
+        go.Scatter(
+            x=df_timeline[df_timeline['Type'] == i]['Year'],
+            y=df_timeline[df_timeline['Type'] == i]['Month'],
+            text=df_timeline[df_timeline['Type'] == i]['Event'],
+            mode='markers',
+            #textposition='bottom center',
+            opacity=0.7,
+            marker={
+                'size': 15,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            name=i,
+        ) for i in df_timeline.Type.unique()
+    ]
+
+    layout = go.Layout(
+                autosize=True,
+                #width = 1300,
+                #height = 300,
+                xaxis={ 'title': 'Year',
+                        'ticks': '',
+                        # 'showticklabels': False,
+                      },
+                yaxis={'title': 'Month',
+                       'showgrid': False,
+                       'showline': False,
+                       'zeroline': False,
+                       'ticks': '',
+                       # 'showticklabels': False,
+                       },
+                margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+                legend={'x': 0, 
+                        'y': 1,
+                        'orientation':'h'
+                        },
+                hovermode='closest',
+            )
+
+    fig=dict(data=data, layout=layout)
+
+    return fig
+
+
+# DataTable
 @app.callback(
     Output('datatable', 'children'),
-    [Input('slider', 'value')])
-def update_table(value):
+    [Input('slider', 'value'),
+    Input('RadioItems','value')])
+def update_table(value,type):
     # print("value:",value)
-    if value == 26:
+    if value == len(uniqueYear):
         newdf = df
     else:
         newdf = df[df.Date.str.contains(str(yearDict[value]), na=False)]
 
+    #newdf=pd.DataFrame()
+
+    if (type == "" or type == "All"):
+        newdf = newdf
+    else:
+        #newdf = newdf.append(newdf.loc[newdf['Type']==type])
+        newdf=newdf.loc[newdf['Type']==type]
+
+    newdf=newdf.fillna('missing')
+
     table = dash_table.DataTable(
         id='table',
         data=newdf.to_dict("rows"),
-        columns=[{"name": i, "id": i} for i in newdf.columns if i not in ["Image", "Column", "Longitude", "Latitude"]],
+        columns=[{"name": i, "id": i} for i in newdf.columns \
+            if i not in ["Tags", "Image", "Column", "lat,long", "Year", "Month", "lat", "long"]],
         n_fixed_rows=1,
         sorting=True,
         filtering=True,
@@ -178,47 +373,6 @@ def update_table(value):
     )
     return table
 
-
-@app.callback(
-    Output('map', 'figure'),
-    [Input('slider', 'value')])
-def update_map(value):
-    print("year: ", value)
-    if value == 26:
-        newdf = df
-    else:
-        newdf = df[df.Date.str.contains(str(yearDict[value]), na=False)]
-
-    updated_data = [
-        go.Scattermapbox(
-            lat=newdf['Latitude'],
-            lon=newdf['Longitude'],
-            mode='markers',
-            marker=go.scattermapbox.Marker(
-                size=8,
-                opacity=0.7,
-             ),
-            text= newdf['Name'],
-        ),
-    ]
-
-    layout = dict(
-        #autosize= True,
-        hovermode='closest',
-        showlegend=False,
-        mapbox=dict(
-            accesstoken=mapbox_access_token,
-            #bearing=0,
-            center=dict(lat=-38.92, lon=174.88),
-            pitch=0,
-            zoom=4,
-        ),
-        margin = dict(r=40, l=40, t=40, b=40),
-        uirevision='same',
-    )
-
-    fig=dict(data=updated_data, layout=layout)
-    return fig
 
 """
 if __name__ == '__main__':
