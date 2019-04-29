@@ -20,14 +20,14 @@ from . import views
 from django.views.generic import TemplateView
 
 # Load plotly apps - this triggers their registration
-import Django_Dash_app.dashboard.dashboard_app
+import Django_Dash_app.dashplotly.dashboard_app
 
 
 app_name="Django_Dash_app"
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('index/', views.index, name='index'),
+    path('', views.index, name='index'),
     path('django_plotly_dash/', include('django_plotly_dash.urls')),
    # path('dashboard',dashboard, name="dashboard")
 ]
