@@ -78,10 +78,6 @@ df.loc[:, 'Year'] = cleanDate.dt.year
 
 alert=""
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 70115db8aa5d8e19334404d39e19187502042a66
 # Layout
 app.layout = html.Div(children=[
     html.Div(
@@ -89,47 +85,6 @@ app.layout = html.Div(children=[
         children=[
             html.Div(
                 className='row',
-<<<<<<< HEAD
-=======
-                children=[
-                    html.Div(
-                        # Radioitems
-                        className='col-sm-4',
-                        children=[
-                            dcc.RadioItems(
-                                id="RadioItems",
-                                labelClassName="Select Type",
-                                options=RadioItems_options,
-                                value="",
-                                labelStyle={'display': 'inline-block',
-                                            'margin': '6px',
-                                           },
-                            )
-                        ],
-                        style={
-                            'padding':'30px',
-                        }
-                    ),
-
-                    html.Div(
-                        # map
-                        className='col-sm-8',
-                        children=[
-                            dcc.Graph(
-                                id="map",
-                                config={
-                                    'scrollZoom': True
-                                },
-                            ),
-                        ]
-                    ),
-                ]
-            ),
-
-            html.Div(
-                # Slider
-                className='container',
->>>>>>> 70115db8aa5d8e19334404d39e19187502042a66
                 children=[
                     html.Div(
                         # Radioitems
@@ -155,10 +110,8 @@ app.layout = html.Div(children=[
                     ),
 
                     html.Div(
-                        # map
                         className='col-sm-7',
                         children=[
-
                             dcc.Graph(
                                 id="map",
                                 config={
@@ -194,10 +147,7 @@ app.layout = html.Div(children=[
                 ],
                 style={
                     'margin-bottom':'50px',
-<<<<<<< HEAD
                     'width': 'auto',
-=======
->>>>>>> 70115db8aa5d8e19334404d39e19187502042a66
                 }
             ),
 
@@ -233,25 +183,19 @@ def update_map(year,type):
         newdf =newdf.loc[newdf['Type']==type]
 
     # print(newdf)
-<<<<<<< HEAD
-    # nolocation=""
-
-
 
     try:
         coord = newdf['lat,long'].str.split(', ', expand=True)
         newdf.loc[:, 'lat']=coord[0]
         newdf.loc[:, 'long']=coord[1]
 
-    
     except:
-        print("some coordinates are mising")
+        print("some coordinates are missing")
 
-        
 
     newdf=newdf.fillna('missing')
     nolocationdf=newdf.loc[newdf['lat']=="missing"]
-    nolocation=nolocationdf['Name'] 
+    nolocation=nolocationdf['Name']
     print('nolocationdf:', nolocationdf)
     Alert_message=""
     alert='Coordinates for '
@@ -263,12 +207,7 @@ def update_map(year,type):
 
 
     print('newdf:\n', newdf)
-=======
-    coord = newdf['lat,long'].str.split(', ', expand=True)
-    newdf.loc[:, 'lat']=coord[0]
-    newdf.loc[:, 'long']=coord[1]
 
->>>>>>> 70115db8aa5d8e19334404d39e19187502042a66
     updated_data = [
         go.Scattermapbox(
             lat=newdf['lat'],
@@ -293,14 +232,9 @@ def update_map(year,type):
             pitch=0,
             zoom=9,
         ),
-<<<<<<< HEAD
         margin = dict(r=40, l=40, t=20, b=20),
         uirevision='same',
         label= Alert_message,
-=======
-        margin = dict(r=40, l=40, t=40, b=40),
-        uirevision='same',
->>>>>>> 70115db8aa5d8e19334404d39e19187502042a66
     )
 
     fig=dict(data=updated_data, layout=layout)
@@ -338,14 +272,9 @@ def update_timeline(type):
     ]
 
     layout = go.Layout(
-<<<<<<< HEAD
                 autosize=True,
                 #width = 1300,
                 #height = 300,
-=======
-                width = 1350,
-                height = 300,
->>>>>>> 70115db8aa5d8e19334404d39e19187502042a66
                 xaxis={ 'title': 'Year',
                         'ticks': '',
                         # 'showticklabels': False,
@@ -358,16 +287,11 @@ def update_timeline(type):
                        # 'showticklabels': False,
                        },
                 margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-<<<<<<< HEAD
-                legend={'x': 0, 
+                legend={'x': 0,
                         'y': 1,
                         'orientation':'h'
                         },
                 hovermode='closest',
-=======
-                #legend={'x': 0, 'y': 1},
-                hovermode='closest'
->>>>>>> 70115db8aa5d8e19334404d39e19187502042a66
             )
 
     fig=dict(data=data, layout=layout)
@@ -395,11 +319,8 @@ def update_table(value,type):
         #newdf = newdf.append(newdf.loc[newdf['Type']==type])
         newdf=newdf.loc[newdf['Type']==type]
 
-<<<<<<< HEAD
     newdf=newdf.fillna('missing')
 
-=======
->>>>>>> 70115db8aa5d8e19334404d39e19187502042a66
     table = dash_table.DataTable(
         id='table',
         data=newdf.to_dict("rows"),
