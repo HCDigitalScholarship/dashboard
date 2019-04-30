@@ -196,17 +196,15 @@ def update_map(year,type):
     newdf=newdf.fillna('missing')
     nolocationdf=newdf.loc[newdf['lat']=="missing"]
     nolocation=nolocationdf['Name']
-    print('nolocationdf:', nolocationdf)
+    # print('nolocationdf:', nolocationdf)
     Alert_message=""
     alert='Coordinates for '
     for name in nolocation:
         alert = alert + name+", "
     Alert_message = alert + "are missing."
 
-    print (Alert_message)
-
-
-    print('newdf:\n', newdf)
+    # print (Alert_message)
+    # print('newdf:\n', newdf)
 
     updated_data = [
         go.Scattermapbox(
@@ -253,7 +251,7 @@ def update_timeline(type):
     else:
         df_timeline = df[df['Type'] == type]
 
-    print (df_timeline.Type.unique())
+    # print (df_timeline.Type.unique())
 
     data = [
         go.Scatter(
