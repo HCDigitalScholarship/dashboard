@@ -57,15 +57,14 @@ for type in df['Type'].unique():
 uniqueType = sorted(uniqueType)
 uniqueType.remove('nan')
 
-RadioItems_options=[]
+checklist_options=[]
 for type in uniqueType:
     option={}
     option['label']=str(type)
     option['value']=str(type)
-    RadioItems_options.append(option)
+    checklist_options.append(option)
 select_all = {'label':"Show all types",'value':"All"}
-RadioItems_options.append(select_all)
-# print("RadioItems_options \n", RadioItems_options)
+checklist_options.append(select_all)
 
 
 # for map
@@ -87,38 +86,45 @@ app.layout = html.Div(children=[
                 className='row',
                 children=[
                     html.Div(
-                        # Radioitems
+                        # checklist
                         className='col-sm-4',
                         children=[
-                            dcc.RadioItems(
-                                id="RadioItems",
-                                labelClassName="Select Type",
-                                options=RadioItems_options,
-                                value="",
-                                labelStyle={'display': 'inline-block',
-                                            'margin': '6px',
-                                           },
+                            html.Div(
+                                className='container-fuild',
+                                children=[
+                                    dcc.Checklist(
+                                        id="checklist",
+                                        labelClassName="Select Type",
+                                        options=checklist_options,
+                                        values=['All'],
+                                        labelStyle={'display': 'inline-block',
+                                                    'margin': '6px',
+                                                   },
+                                    )
+                                ],
+                                style={
+                                    'border-style': 'solid',
+                                    'border-color': '#d7dde5',
+                                    'background-color': '#f4f6f9',
+                                    'padding': '5px',
+                                }
                             )
-                        ],
-                        style={
-                            'padding':'10px',
-                            'border-style': 'solid',
-                            'border-color': '#d7dde5',
-                            'background-color': '#f4f6f9',
-                            'margin-left':'10px',
-                        }
+                        ]
                     ),
 
                     html.Div(
-                        className='col-sm-7',
+                        className='col-sm-8',
                         children=[
+                            # map
                             dcc.Graph(
                                 id="map",
                                 config={
                                     'scrollZoom': True
                                 },
+                                animate=True,
                             ),
-                            dcc.Slider(
+                            # slider
+                            dcc.RangeSlider(
                                 id='slider',
                                 min=0,
                                 max=len(uniqueYear),
@@ -126,10 +132,10 @@ app.layout = html.Div(children=[
                                 # min=min(uniqueYear),
                                 # max=max(uniqueYear),
                                 # marks={str(date):str(date) for date in uniqueYear},
-                                value=len(uniqueYear),
+                                value=[0,len(uniqueYear)-1],
                             )
 
-                        ]
+                        ],
                     ),
                 ],
 
@@ -168,21 +174,23 @@ app.layout = html.Div(children=[
 @app.callback(
     Output('map', 'figure'),
     [Input('slider', 'value'),
-    Input('RadioItems','value')])
-def update_map(year,type):
-    # print("year: ", year)
-    # print('type:',type)
-    if year == len(uniqueYear):
-        newdf = df
-    else:
-        newdf = df[df.Date.str.contains(str(yearDict[year]), na=False)]
+    Input('checklist','values')])
+def update_map(years,types):
+    print("years: ", years)
+    print('types:', types)
+    # filter by year
+    selected_years = [str(yearDict[x]) for x in range(years[0], years[1])]
+    # print(selected_years)
+    newdf = df.loc[df.Date.str.contains('|'.join(selected_years), na=False)]
+    # print(newdf['Year'])
 
-    if (type == "" or type == "All"):
-        newdf = newdf
+    # filter by types
+    if 'All' in types:
+        pass
     else:
-        newdf =newdf.loc[newdf['Type']==type]
+        newdf = newdf.loc[newdf['Type'].isin(types)]
 
-    # print(newdf)
+    print(newdf)
 
     try:
         coord = newdf['lat,long'].str.split(', ', expand=True)
@@ -193,7 +201,7 @@ def update_map(year,type):
         print("some coordinates are missing")
 
 
-    newdf=newdf.fillna('missing')
+    newdf.fillna('missing')
     nolocationdf=newdf.loc[newdf['lat']=="missing"]
     nolocation=nolocationdf['Name']
     # print('nolocationdf:', nolocationdf)
@@ -208,27 +216,28 @@ def update_map(year,type):
 
     updated_data = [
         go.Scattermapbox(
-            lat=newdf['lat'],
-            lon=newdf['long'],
+            lat=newdf[newdf['Type']==i]['lat'],
+            lon=newdf[newdf['Type']==i]['long'],
             mode='markers',
             marker=go.scattermapbox.Marker(
                 size=11,
                 opacity=0.7,
              ),
-            text= df['Name']+"<br>"+newdf['Description'],
-        ),
+            text=newdf[newdf['Type']==i]['Name']+"<br>"+newdf[newdf['Type']==i]['Description'],
+            name=i,
+        ) for i in newdf.Type.unique()
     ]
 
     layout = dict(
-        #autosize= True,
+        autosize= True,
         hovermode='closest',
         showlegend=False,
         mapbox=dict(
             accesstoken=mapbox_access_token,
-            #bearing=0,
+            bearing=0,
             center=dict(lat=-36.85, lon=174.77),
             pitch=0,
-            zoom=9,
+            zoom=10,
         ),
         margin = dict(r=40, l=40, t=20, b=20),
         uirevision='same',
@@ -243,13 +252,13 @@ def update_map(year,type):
 # timeline
 @app.callback(
     Output('timeline', 'figure'),
-    [Input('RadioItems', 'value')])
-def update_timeline(type):
-    # print ('type: ', type)
-    if (type == "" or type == "All"):
+    [Input('checklist', 'values')])
+def update_timeline(types):
+    # print ('types: ', types)
+    if 'All' in types:
         df_timeline = df
     else:
-        df_timeline = df[df['Type'] == type]
+        df_timeline = df.loc[df['Type'].isin(types)]
 
     # print (df_timeline.Type.unique())
 
@@ -285,10 +294,6 @@ def update_timeline(type):
                        # 'showticklabels': False,
                        },
                 margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-                legend={'x': 0,
-                        'y': 1,
-                        'orientation':'h'
-                        },
                 hovermode='closest',
             )
 
@@ -301,28 +306,26 @@ def update_timeline(type):
 @app.callback(
     Output('datatable', 'children'),
     [Input('slider', 'value'),
-    Input('RadioItems','value')])
-def update_table(value,type):
+    Input('checklist','values')])
+def update_table(years,types):
     # print("value:",value)
-    if value == len(uniqueYear):
-        newdf = df
-    else:
-        newdf = df[df.Date.str.contains(str(yearDict[value]), na=False)]
+    selected_years = [str(yearDict[x]) for x in range(years[0], years[1])]
+    table_df = df.loc[df.Date.str.contains('|'.join(selected_years), na=False)]
+
 
     #newdf=pd.DataFrame()
 
-    if (type == "" or type == "All"):
-        newdf = newdf
+    if 'All' in types:
+        pass
     else:
-        #newdf = newdf.append(newdf.loc[newdf['Type']==type])
-        newdf=newdf.loc[newdf['Type']==type]
+        table_df= table_df.loc[table_df['Type'].isin(types)]
 
-    newdf=newdf.fillna('missing')
+    table_df.fillna('missing')
 
     table = dash_table.DataTable(
         id='table',
-        data=newdf.to_dict("rows"),
-        columns=[{"name": i, "id": i} for i in newdf.columns \
+        data=table_df.to_dict("rows"),
+        columns=[{"name": i, "id": i} for i in table_df.columns \
             if i not in ["Tags", "Image", "Column", "lat,long", "Year", "Month", "lat", "long"]],
         n_fixed_rows=1,
         sorting=True,
