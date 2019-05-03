@@ -50,7 +50,7 @@ keys = range(len(uniqueYear))
 for i in keys:
     yearDict[i] = uniqueYear[i]
 
-# for Radioitems
+# for Checklist_items
 uniqueType = set()
 for type in df['Type'].unique():
     uniqueType.add(str(type))
@@ -82,6 +82,16 @@ app.layout = html.Div(children=[
     html.Div(
         className='container-fluid',
         children=[
+            html.Div(
+                dcc.ConfirmDialog(
+                    id='confirm',
+                    message='Your selected range has no data! Try again!',
+                    displayed=False
+                ),
+            ),
+
+            html.Div(id='output-confirm'),
+            
             html.Div(
                 className='row',
                 children=[
@@ -180,9 +190,7 @@ def update_map(years,types):
     # print('types:', types)
     # filter by year
     selected_years = [str(yearDict[x]) for x in range(years[0], years[1])]
-    # print(selected_years)
     newdf = df.loc[df.Date.str.contains('|'.join(selected_years), na=False)]
-    # print(newdf['Year'])
 
     # filter by types
     if 'All' in types:
@@ -190,43 +198,60 @@ def update_map(years,types):
     else:
         newdf = newdf.loc[newdf['Type'].isin(types)]
 
-    # print(newdf)
-
-    try:
-        coord = newdf['lat,long'].str.split(', ', expand=True)
-        newdf.loc[:, 'lat']=coord[0]
-        newdf.loc[:, 'long']=coord[1]
-
-    except:
-        print("some coordinates are missing")
-
-
-    newdf.fillna('missing')
-    nolocationdf=newdf.loc[newdf['lat']=="missing"]
-    nolocation=nolocationdf['Name']
-    # print('nolocationdf:', nolocationdf)
     Alert_message=""
-    alert='Coordinates for '
-    for name in nolocation:
-        alert = alert + name+", "
-    Alert_message = alert + "are missing."
+    newdf=newdf.fillna('missing')
+    print('newdf:\n', newdf)
+    # print(newdf)
+    if not newdf.empty:
+        try:
+            coord = newdf['lat,long'].str.split(', ', expand=True)
+            newdf.loc[:, 'lat']=coord[0]
+            newdf.loc[:, 'long']=coord[1]
 
-    # print (Alert_message)
-    # print('newdf:\n', newdf)
+        except:
+            print("some coordinates are missing")
+        
+        """
+        nolocationdf=newdf.loc[newdf['lat']=="missing"]
+        nolocation=nolocationdf['Name']
 
-    updated_data = [
-        go.Scattermapbox(
-            lat=newdf[newdf['Type']==i]['lat'],
-            lon=newdf[newdf['Type']==i]['long'],
-            mode='markers',
-            marker=go.scattermapbox.Marker(
-                size=11,
-                opacity=0.7,
-             ),
-            text=newdf[newdf['Type']==i]['Name']+"<br>"+newdf[newdf['Type']==i]['Description'],
-            name=i,
-        ) for i in newdf.Type.unique()
-    ]
+        alert='Coordinates for '
+        for name in nolocation:
+            alert = alert + name+", "
+            Alert_message = alert + "are missing."
+
+        print (Alert_message)
+        """
+        updated_data = [
+            go.Scattermapbox(
+                lat=newdf[newdf['Type']==i]['lat'],
+                lon=newdf[newdf['Type']==i]['long'],
+                mode='markers',
+                marker=go.scattermapbox.Marker(
+                    size=11,
+                    opacity=0.7,
+                ),
+                text=newdf[newdf['Type']==i]['Name']+"<br>"+newdf[newdf['Type']==i]['Description'],
+                name=i,
+            ) for i in newdf.Type.unique()
+        ]
+
+
+    else:
+        newdf = pd.DataFrame()   
+        updated_data = [
+            go.Scattermapbox(
+                lat=[],
+                lon=[],
+                mode='markers',
+                marker=go.scattermapbox.Marker(
+                    size=11,
+                    opacity=0.7,
+                ),
+            ),
+        ]
+
+    
 
     layout = dict(
         autosize= True,
@@ -256,7 +281,7 @@ def update_map(years,types):
     Input('checklist', 'values')])
 def update_timeline(years, types):
     # print ('types: ', types)
-    print ('years: ', years)
+    #print ('years: ', years)
     # filter by years
     selected_years = [str(yearDict[x]) for x in range(years[0], years[1])]
     df_timeline = df.loc[df.Date.str.contains('|'.join(selected_years), na=False)]
@@ -265,7 +290,8 @@ def update_timeline(years, types):
     if 'All' in types:
         pass
     else:
-        df_timeline = df.loc[df['Type'].isin(types)]
+        df_timeline = df_timeline.loc[df['Type'].isin(types)]
+
 
     data = [
         go.Scatter(
@@ -282,7 +308,7 @@ def update_timeline(years, types):
             name=i,
         ) for i in df_timeline.Type.unique()
     ]
-
+      
     layout = go.Layout(
                 autosize=True,
                 #width = 1300,
@@ -306,6 +332,33 @@ def update_timeline(years, types):
 
     return fig
 
+# Alert Message
+@app.callback(
+    Output('confirm', 'displayed'),
+    [Input('slider', 'value'),
+    Input('checklist', 'values')])
+
+def display_confirm(years, types):
+    # filter by years
+    selected_years = [str(yearDict[x]) for x in range(years[0], years[1])]
+    df_confirm = df.loc[df.Date.str.contains('|'.join(selected_years), na=False)]
+
+    # filter by types
+    if 'All' in types:
+        pass
+    else:
+        df_confirm = df_confirm.loc[df['Type'].isin(types)]
+
+    if df_confirm.empty:
+        return True
+    return False
+
+# prevent reloading confirm dialog
+@app.callback(Output('output-confirm', 'children'),
+              [Input('confirm', 'submit_n_clicks')])
+def update_output(submit_n_clicks):
+    if submit_n_clicks:
+        return 'It wasnt easy but we did it {}'.format(submit_n_clicks)
 
 # DataTable
 @app.callback(
