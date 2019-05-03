@@ -176,8 +176,8 @@ app.layout = html.Div(children=[
     [Input('slider', 'value'),
     Input('checklist','values')])
 def update_map(years,types):
-    print("years: ", years)
-    print('types:', types)
+    # print("years: ", years)
+    # print('types:', types)
     # filter by year
     selected_years = [str(yearDict[x]) for x in range(years[0], years[1])]
     # print(selected_years)
@@ -190,7 +190,7 @@ def update_map(years,types):
     else:
         newdf = newdf.loc[newdf['Type'].isin(types)]
 
-    print(newdf)
+    # print(newdf)
 
     try:
         coord = newdf['lat,long'].str.split(', ', expand=True)
@@ -252,15 +252,20 @@ def update_map(years,types):
 # timeline
 @app.callback(
     Output('timeline', 'figure'),
-    [Input('checklist', 'values')])
-def update_timeline(types):
+    [Input('slider', 'value'),
+    Input('checklist', 'values')])
+def update_timeline(years, types):
     # print ('types: ', types)
+    print ('years: ', years)
+    # filter by years
+    selected_years = [str(yearDict[x]) for x in range(years[0], years[1])]
+    df_timeline = df.loc[df.Date.str.contains('|'.join(selected_years), na=False)]
+
+    # filter by types
     if 'All' in types:
-        df_timeline = df
+        pass
     else:
         df_timeline = df.loc[df['Type'].isin(types)]
-
-    # print (df_timeline.Type.unique())
 
     data = [
         go.Scatter(
