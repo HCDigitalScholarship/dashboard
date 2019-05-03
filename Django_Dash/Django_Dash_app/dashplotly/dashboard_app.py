@@ -63,8 +63,6 @@ for type in uniqueType:
     option['label']=str(type)
     option['value']=str(type)
     checklist_options.append(option)
-select_all = {'label':"Show all types",'value':"All"}
-checklist_options.append(select_all)
 
 
 # for map
@@ -92,11 +90,13 @@ app.layout = html.Div(children=[
                             html.Div(
                                 className='container-fuild',
                                 children=[
+                                    html.Button('Select All', id='selectAll', n_clicks_timestamp=0),
+                                    html.Button('Clear', id='clear', n_clicks_timestamp=0),
                                     dcc.Checklist(
                                         id="checklist",
                                         labelClassName="Select Type",
                                         options=checklist_options,
-                                        values=['All'],
+                                        values=uniqueType,
                                         labelStyle={'display': 'inline-block',
                                                     'margin': '6px',
                                                    },
@@ -158,7 +158,7 @@ app.layout = html.Div(children=[
             ),
 
             html.Div(
-                className='container',
+                className='container-fuild',
                 id='datatable',
                 style={
                     'margin-bottom':'100px',
@@ -168,7 +168,17 @@ app.layout = html.Div(children=[
     ),
 ])
 
-
+# checklist
+@app.callback(
+    Output('checklist', 'values'),
+    [Input('selectAll', 'n_clicks_timestamp'),
+    Input('clear', 'n_clicks_timestamp')])
+def selectAll(select, clear):
+    # print('select', select)
+    # print('clear', clear)
+    if int(select) >= int(clear):
+        return uniqueType
+    return ['']
 
 # map
 @app.callback(
@@ -256,7 +266,7 @@ def update_map(years,types):
     Input('checklist', 'values')])
 def update_timeline(years, types):
     # print ('types: ', types)
-    print ('years: ', years)
+    # print ('years: ', years)
     # filter by years
     selected_years = [str(yearDict[x]) for x in range(years[0], years[1])]
     df_timeline = df.loc[df.Date.str.contains('|'.join(selected_years), na=False)]
@@ -265,7 +275,9 @@ def update_timeline(years, types):
     if 'All' in types:
         pass
     else:
-        df_timeline = df.loc[df['Type'].isin(types)]
+        df_timeline = df_timeline.loc[df['Type'].isin(types)]
+
+    print(df_timeline['Year'])
 
     data = [
         go.Scatter(
@@ -290,6 +302,7 @@ def update_timeline(years, types):
                 xaxis={ 'title': 'Year',
                         'ticks': '',
                         # 'showticklabels': False,
+                        'tickformat': ',d',
                       },
                 yaxis={'title': 'Month',
                        'showgrid': False,
@@ -317,7 +330,6 @@ def update_table(years,types):
     selected_years = [str(yearDict[x]) for x in range(years[0], years[1])]
     table_df = df.loc[df.Date.str.contains('|'.join(selected_years), na=False)]
 
-
     #newdf=pd.DataFrame()
 
     if 'All' in types:
@@ -336,12 +348,12 @@ def update_table(years,types):
         sorting=True,
         filtering=True,
         pagination_mode="fe",
-                pagination_settings={
-                    "displayed_pages": 1,
-                    "current_page": 0,
-                    "page_size": 35,
-                },
-                navigation="page",
+        pagination_settings={
+            "displayed_pages": 1,
+            "current_page": 0,
+            "page_size": 10,
+        },
+        navigation="page",
         style_cell={
             'whiteSpace': 'normal',
             'padding': '5px',
@@ -356,7 +368,7 @@ def update_table(years,types):
         },
         style_table={
             'overflowX': 'scroll', # Horizontal scroll
-            'maxHeight': '500',
+            'maxHeight': '600',
         },
 
         style_cell_conditional=[{
@@ -368,8 +380,6 @@ def update_table(years,types):
             'selector': '.dash-cell div.dash-cell-value',
             'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;'
         }],
-
-        virtualization=True,
     )
     return table
 
