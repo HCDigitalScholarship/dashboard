@@ -34,3 +34,14 @@ div.col-sm-4.Radioitems {
 	border-color: #d7dde5;
 	background-color: #d0d6dd;
 }
+
+
+#credits {
+  border-radius: 8px;
+  border: 2px solid #e3e3e3;
+  background: #f5f5f5;
+  width: 95%;
+  height: 150px;
+  padding: 15px;
+  margin: auto; 
+}
