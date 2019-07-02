@@ -1,12 +1,11 @@
 # dashboard
 ### Research dashboard for Indigeneity/Urban Ecology courses
 
-The research dashboard is built with [Plotly Dash](https://dash.plot.ly/), which is a handy Python framework for building data virtualization.  
-It also utilizes [django-plotly-dash](https://pypi.org/project/django-plotly-dash/) to embed our Plotly Dash app(s) into Django framework, 
-in order to implement any other features in the future. Read our [cookbook entry](https://github.com/HCDigitalScholarship/ds-cookbook/blob/master/django-plotly-dash/django-plotly-dash.md) to see how to adapt a dahsboard app to Django.
+The research dashboard is built with [Plotly Dash](https://dash.plot.ly/), which is a handy Python framework for building data visualizations.
+It also utilizes [django-plotly-dash](https://pypi.org/project/django-plotly-dash/) to embed the Plotly Dash app(s) into the Django framework, 
+In order to implement other features in the future, read our [cookbook entry](https://github.com/HCDigitalScholarship/ds-cookbook/blob/master/django-plotly-dash/django-plotly-dash.md) to see how to adapt a dashboard app to Django.
 
-**Notes:** The package `django-plotly-dash` requires version 2.0 or greater of Django, and a minimum Python version needed of 3.5. In 
-addition, it requires Dash's version not greater than 0.38.0 (they have not developed the package for greater versions yet by May, 2019).
+**Notes:** The package `django-plotly-dash` requires Django>=2.0, Python>=3.5, Dash<=0.38.0 (they have not developed the package for greater versions as of May 2019).
 
 ### Skeleton of this project
 ```
